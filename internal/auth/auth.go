@@ -7,9 +7,9 @@ import (
 	"github.com/morozoffnor/home-storage/internal/config"
 )
 
-type ContextUserIDKey string
+type ContextUserEmailKey string
 
-var ContextUserID ContextUserIDKey = "user_id"
+var ContextUserEmail ContextUserEmailKey = "user_email"
 
 type Auth struct {
 	cfg *config.Config

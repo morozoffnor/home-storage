@@ -1,32 +1,43 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/morozoffnor/home-storage/internal/types"
+	"github.com/morozoffnor/home-storage/internal/auth"
+	"github.com/morozoffnor/home-storage/internal/database"
 )
 
-func (h *APIHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed parsing body", http.StatusBadRequest)
+type User struct {
+	auth *auth.Auth
+	db   *database.Database
+}
+
+func (u *User) Register(w http.ResponseWriter, r *http.Request) {
+	var raw bytes.Buffer
+	if _, err := raw.ReadFrom(r.Body); err != nil {
+		http.Error(w, "Invalid body", http.StatusUnprocessableEntity)
 		return
 	}
 
-	var user types.User
+	type regReq struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
+	}
 
-	err = json.Unmarshal(body, &user)
+	var user regReq
+
+	err := json.Unmarshal(raw.Bytes(), &user)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Invalid json", http.StatusUnprocessableEntity)
 		return
 	}
 
-	exists, err := h.db.User.Exists(user.Email)
+	exists, err := u.db.User.Exists(user.Email)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
@@ -38,7 +49,7 @@ func (h *APIHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// generating new token
-	token, err := h.auth.Jwt.GenerateToken(user.Email)
+	token, err := u.auth.Jwt.GenerateToken(user.Email)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
@@ -46,15 +57,16 @@ func (h *APIHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// adding token to cookies
-	ctx, err := h.auth.Jwt.AddTokenToCookies(&w, r, token)
+	ctx, err := u.auth.Jwt.AddTokenToCookies(&w, r, token)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	r = r.WithContext(ctx)
 
-	// saving user
-	err = h.db.User.Create(user.Username, user.Email, user.PassHash)
+	// hashing password and saving user
+	hash := u.auth.HashPassword(user.Password)
+	err = u.db.User.Create(user.Username, user.Email, hash)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
@@ -65,51 +77,47 @@ func (h *APIHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *APIHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
+func (u *User) Login(w http.ResponseWriter, r *http.Request) {
 	// получаем тело, распаковываем его, если надо
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed parsing body", http.StatusBadRequest)
+	var raw bytes.Buffer
+	if _, err := raw.ReadFrom(r.Body); err != nil {
+		http.Error(w, "Invalid body", http.StatusUnprocessableEntity)
 		return
 	}
 	type LoginReq struct {
 		Email    string `json:"email"`
-		PassHash string `json:"password_hash"`
+		Password string `json:"password"`
 	}
 
-	var loginReq = LoginReq{}
+	loginReq := LoginReq{}
 
-	// вытаскиваем джейсонку в структуру
-	err = json.Unmarshal(body, &loginReq)
+	err := json.Unmarshal(raw.Bytes(), &loginReq)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Invalid json", http.StatusUnprocessableEntity)
 		return
 	}
 
-	// находим такого юзера в бд
-	dbUser, err := h.db.User.Get(loginReq.Email)
+	dbUser, err := u.db.User.Get(loginReq.Email)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "No such user", http.StatusUnauthorized)
 		return
 	}
 
-	// хешируем присланный пароль, сравниваем с хешем из бд
-	if dbUser.PassHash != loginReq.PassHash {
+	hash := u.auth.HashPassword(loginReq.Password)
+	if dbUser.PassHash != hash {
 		http.Error(w, "Wrong login/pass", http.StatusUnauthorized)
 		return
 	}
 
-	// добавляем токен в куки
-	token, err := h.auth.Jwt.GenerateToken(dbUser.Email)
+	token, err := u.auth.Jwt.GenerateToken(dbUser.Email)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
-	ctx, err := h.auth.Jwt.AddTokenToCookies(&w, r, token)
+	ctx, err := u.auth.Jwt.AddTokenToCookies(&w, r, token)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -119,4 +127,77 @@ func (h *APIHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain, utf-8")
 	w.WriteHeader(http.StatusOK)
+}
+
+func (u *User) Get(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("user_id").(int)
+	if !ok {
+		http.Error(w, http.StatusText(400), 400)
+	}
+
+	user, err := u.db.User.GetByID(userID)
+	if err != nil {
+		fmt.Printf("error updating home: %v\n", err)
+		http.Error(w, "Failed to update home", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+func (u *User) GetAll(w http.ResponseWriter, r *http.Request) {
+	users, err := u.db.User.GetAll()
+	if err != nil {
+		fmt.Println("error getting all users")
+		http.Error(w, http.StatusText(500), 500)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
+
+func (u *User) AddHome(w http.ResponseWriter, r *http.Request) {
+	type addHomeReq struct {
+		ID int `json:"id"`
+	}
+	userID, ok := r.Context().Value("user_id").(int)
+	if !ok {
+		http.Error(w, http.StatusText(400), 400)
+		return
+	}
+	var raw bytes.Buffer
+	if _, err := raw.ReadFrom(r.Body); err != nil {
+		http.Error(w, "Invalid body", http.StatusUnprocessableEntity)
+		return
+	}
+	homeReq := addHomeReq{}
+	err := json.Unmarshal(raw.Bytes(), &homeReq)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Invalid json", http.StatusUnprocessableEntity)
+		return
+	}
+
+	err = u.db.User.AddHome(userID, homeReq.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error adding a home", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (u *User) GetHomes(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("user_id").(int)
+	if !ok {
+		http.Error(w, http.StatusText(400), 400)
+		return
+	}
+	homes, err := u.db.User.GetHomes(userID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error finding homes", http.StatusInternalServerError)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(homes)
 }

@@ -6,25 +6,27 @@ import (
 	"github.com/morozoffnor/home-storage/internal/types"
 )
 
-func (h *Home) Create(homeName string, description string) error {
+func (h *Home) Create(homeName string, description string) (int, error) {
 	tx, err := h.conn.Begin(h.ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	query := `INSERT INTO homes (name, description) VALUES ($1, $2)`
-	_, err = tx.Exec(h.ctx, query, homeName, description)
+	var homeID int
+	query := `INSERT INTO homes (name, description) VALUES ($1, $2) RETURNING id`
+	err = tx.QueryRow(h.ctx, query, homeName, description).Scan(&homeID)
 	if err != nil {
+		tx.Rollback(h.ctx)
 		fmt.Println("error while executing home transaction")
-		return err
+		return 0, err
 	}
 
 	err = tx.Commit(h.ctx)
 	if err != nil {
 		fmt.Println("error while committing home transaction")
-		return err
+		return 0, err
 	}
-	return nil
+	return homeID, nil
 }
 
 func (h *Home) Get(id int) (*types.Home, error) {

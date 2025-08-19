@@ -15,15 +15,15 @@ type JWT struct {
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID string `json:"user_id"`
+	UserEmail string `json:"user_email"`
 }
 
-func (j *JWT) GenerateToken(userID string) (string, error) {
+func (j *JWT) GenerateToken(email string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * 30 * time.Hour)),
 		},
-		UserID: userID,
+		UserEmail: email,
 	})
 	tokenStr, err := token.SignedString([]byte(j.secret))
 	if err != nil {
@@ -60,7 +60,7 @@ func (j *JWT) CheckToken(r *http.Request) bool {
 	if err != nil {
 		return false
 	}
-	if claims.UserID == "" {
+	if claims.UserEmail == "" {
 		return false
 	}
 	return true
@@ -77,17 +77,17 @@ func (j *JWT) GetUserIdFromToken(r *http.Request) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if claims.UserID == "" {
+	if claims.UserEmail == "" {
 		return "", err
 	}
-	return claims.UserID, nil
+	return claims.UserEmail, nil
 }
 
 func (j *JWT) AddTokenToCookies(w *http.ResponseWriter, r *http.Request, token string) (context.Context, error) {
 	http.SetCookie(*w, &http.Cookie{
 		Name:    "Authorization",
 		Value:   token,
-		Expires: time.Now().Add(24 * time.Hour),
+		Expires: time.Now().Add(24 * 30 * time.Hour),
 	})
 
 	claims, err := j.ParseToken(token)
@@ -95,7 +95,7 @@ func (j *JWT) AddTokenToCookies(w *http.ResponseWriter, r *http.Request, token s
 		return nil, err
 	}
 
-	ctx := context.WithValue(r.Context(), ContextUserID, claims.UserID)
+	ctx := context.WithValue(r.Context(), ContextUserEmail, claims.UserEmail)
 
 	return ctx, nil
 }

@@ -13,18 +13,30 @@ func rootRouter(h *handler.APIHandler, m *Middleware) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
-	r.Use(m.Auth)
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", h.User.Register)
+		r.Post("/login", h.User.Login)
+	})
 
 	r.Route("/api", func(r chi.Router) {
+		r.Use(m.Auth)
+		r.Route("/user", func(r chi.Router) {
+			r.Get("/", h.User.GetAll)
+
+			r.Route("/{user_id}", func(r chi.Router) {
+				r.Use(m.userCtx)
+				r.Get("/", h.User.Get)
+			})
+		})
 		r.Route("/home", func(r chi.Router) {
-			r.Get("/", h.GetAllHomes)
-			r.Post("/", h.CreateHome)
+			r.Get("/", h.Home.GetAll)
+			r.Post("/", h.Home.Create)
 
 			r.Route("/{home_id}", func(r chi.Router) {
 				r.Use(m.homeCtx)
-				r.Get("/", h.GetHome)
-				r.Put("/", h.UpdateHome)
-				r.Delete("/", h.DeleteHome)
+				r.Get("/", h.Home.Get)
+				r.Put("/", h.Home.Update)
+				r.Delete("/", h.Home.Delete)
 			})
 		})
 	})

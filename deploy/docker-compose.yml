@@ -10,6 +10,7 @@ services:
     environment:
       - POSTGRES_STRING=postgres://homeuser:homepass@postgres:5432/homedb?sslmode=disable
       - HOME_STORAGE_LISTEN_ADDR=:8080
+      - JWT_SECRET=supersecret
     depends_on:
       postgres:
         condition: service_healthy
