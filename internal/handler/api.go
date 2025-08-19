@@ -5,25 +5,24 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/morozoffnor/home-storage/internal/auth"
 	"github.com/morozoffnor/home-storage/internal/config"
 	"github.com/morozoffnor/home-storage/internal/database"
 	"github.com/morozoffnor/home-storage/internal/types"
 )
 
 type APIHandler struct {
-	cfg *config.Config
-	db  *database.Database
+	cfg  *config.Config
+	db   *database.Database
+	auth *auth.Auth
 }
 
-func New(cfg *config.Config, db *database.Database) *APIHandler {
+func New(cfg *config.Config, db *database.Database, a *auth.Auth) *APIHandler {
 	return &APIHandler{
-		cfg: cfg,
-		db:  db,
+		cfg:  cfg,
+		db:   db,
+		auth: a,
 	}
-}
-
-func (h *APIHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
 }
 
 func (h *APIHandler) CreateHome(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +41,7 @@ func (h *APIHandler) CreateHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.db.CreateHome(req.Name, req.Description)
+	err := h.db.Home.Create(req.Name, req.Description)
 	if err != nil {
 		fmt.Printf("error creating home: %v\n", err)
 		http.Error(w, "Failed to create home", http.StatusInternalServerError)
@@ -54,7 +53,7 @@ func (h *APIHandler) CreateHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIHandler) GetAllHomes(w http.ResponseWriter, r *http.Request) {
-	homes, err := h.db.GetAllHomes()
+	homes, err := h.db.Home.GetAll()
 	if err != nil {
 		fmt.Printf("error getting all homes: %v\n", err)
 		http.Error(w, "Failed to get homes", http.StatusInternalServerError)
@@ -72,7 +71,7 @@ func (h *APIHandler) GetHome(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(homeID)
 
-	home, err := h.db.GetHome(homeID)
+	home, err := h.db.Home.Get(homeID)
 	if err != nil {
 		fmt.Printf("error getting home: %v\n", err)
 		http.Error(w, "Home not found", http.StatusNotFound)
@@ -104,7 +103,7 @@ func (h *APIHandler) UpdateHome(w http.ResponseWriter, r *http.Request) {
 		Description: req.Description,
 	}
 
-	err := h.db.UpdateHome(home)
+	err := h.db.Home.Update(home)
 	if err != nil {
 		fmt.Printf("error updating home: %v\n", err)
 		http.Error(w, "Failed to update home", http.StatusInternalServerError)
@@ -121,7 +120,7 @@ func (h *APIHandler) DeleteHome(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(400), 400)
 	}
 
-	err := h.db.DeleteHome(homeID)
+	err := h.db.Home.Delete(homeID)
 	if err != nil {
 		fmt.Printf("error deleting home: %v\n", err)
 		http.Error(w, "Failed to delete home", http.StatusInternalServerError)

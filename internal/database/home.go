@@ -6,20 +6,20 @@ import (
 	"github.com/morozoffnor/home-storage/internal/types"
 )
 
-func (db *Database) CreateHome(homeName string, description string) error {
-	tx, err := db.conn.Begin(db.ctx)
+func (h *Home) Create(homeName string, description string) error {
+	tx, err := h.conn.Begin(h.ctx)
 	if err != nil {
 		return err
 	}
 
 	query := `INSERT INTO homes (name, description) VALUES ($1, $2)`
-	_, err = tx.Exec(db.ctx, query, homeName, description)
+	_, err = tx.Exec(h.ctx, query, homeName, description)
 	if err != nil {
 		fmt.Println("error while executing home transaction")
 		return err
 	}
 
-	err = tx.Commit(db.ctx)
+	err = tx.Commit(h.ctx)
 	if err != nil {
 		fmt.Println("error while committing home transaction")
 		return err
@@ -27,11 +27,11 @@ func (db *Database) CreateHome(homeName string, description string) error {
 	return nil
 }
 
-func (db *Database) GetHome(id int) (*types.Home, error) {
+func (h *Home) Get(id int) (*types.Home, error) {
 	var home types.Home
 
 	query := `SELECT * FROM homes WHERE id=$1`
-	err := db.conn.QueryRow(db.ctx, query, id).
+	err := h.conn.QueryRow(h.ctx, query, id).
 		Scan(
 			&home.ID,
 			&home.Name,
@@ -44,11 +44,11 @@ func (db *Database) GetHome(id int) (*types.Home, error) {
 	return &home, nil
 }
 
-func (db *Database) GetAllHomes() ([]*types.Home, error) {
+func (h *Home) GetAll() ([]*types.Home, error) {
 	var homes []*types.Home
 
 	query := `SELECT * FROM homes`
-	rows, err := db.conn.Query(db.ctx, query)
+	rows, err := h.conn.Query(h.ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -74,19 +74,19 @@ func (db *Database) GetAllHomes() ([]*types.Home, error) {
 	return homes, nil
 }
 
-func (db *Database) UpdateHome(home *types.Home) error {
-	tx, err := db.conn.Begin(db.ctx)
+func (h *Home) Update(home *types.Home) error {
+	tx, err := h.conn.Begin(h.ctx)
 	if err != nil {
 		return err
 	}
 
 	query := `UPDATE homes SET name = $1, description = $2, updated_at = NOW() WHERE id = $3`
-	_, err = tx.Exec(db.ctx, query, home.Name, home.Description, home.ID)
+	_, err = tx.Exec(h.ctx, query, home.Name, home.Description, home.ID)
 	if err != nil {
 		fmt.Println("error while executing home transaction")
 		return err
 	}
-	err = tx.Commit(db.ctx)
+	err = tx.Commit(h.ctx)
 	if err != nil {
 		fmt.Println("error while committing home transaction")
 		return err
@@ -94,20 +94,20 @@ func (db *Database) UpdateHome(home *types.Home) error {
 	return nil
 }
 
-func (db *Database) DeleteHome(id int) error {
-	tx, err := db.conn.Begin(db.ctx)
+func (h *Home) Delete(id int) error {
+	tx, err := h.conn.Begin(h.ctx)
 	if err != nil {
 		return err
 	}
 
 	query := `DELETE FROM homes WHERE id = $1`
-	_, err = tx.Exec(db.ctx, query, id)
+	_, err = tx.Exec(h.ctx, query, id)
 	if err != nil {
 		fmt.Println("error while executing delete home transaction")
 		return err
 	}
 
-	err = tx.Commit(db.ctx)
+	err = tx.Commit(h.ctx)
 	if err != nil {
 		fmt.Println("error while committing delete home transaction")
 		return err

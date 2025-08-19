@@ -5,6 +5,7 @@ import "os"
 type Config struct {
 	ListenAddr   string
 	DatabaseAddr string
+	JWTSecret    string
 }
 
 func New() *Config {
@@ -22,5 +23,10 @@ func (c *Config) loadFromEnv() {
 	db := os.Getenv("POSTGRES_STRING")
 	if db != "" {
 		c.DatabaseAddr = db
+	}
+
+	j := os.Getenv("JWT_SECRET")
+	if j != "" {
+		c.JWTSecret = j
 	}
 }

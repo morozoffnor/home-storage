@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/morozoffnor/home-storage/internal/auth"
 	"github.com/morozoffnor/home-storage/internal/config"
 	"github.com/morozoffnor/home-storage/internal/database"
 	"github.com/morozoffnor/home-storage/internal/handler"
@@ -15,8 +16,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	h := handler.New(cfg, db)
-	s := server.New(cfg, h)
+	a := auth.New(cfg)
+	h := handler.New(cfg, db, a)
+	m := server.NewMiddleware(a, db)
+	s := server.New(cfg, h, m)
 
 	s.ListenAndServe()
 }

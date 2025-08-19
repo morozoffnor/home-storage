@@ -9,10 +9,11 @@ import (
 	"github.com/morozoffnor/home-storage/internal/handler"
 )
 
-func rootRouter(h *handler.APIHandler) *chi.Mux {
+func rootRouter(h *handler.APIHandler, m *Middleware) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
+	r.Use(m.Auth)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/home", func(r chi.Router) {
@@ -20,7 +21,7 @@ func rootRouter(h *handler.APIHandler) *chi.Mux {
 			r.Post("/", h.CreateHome)
 
 			r.Route("/{home_id}", func(r chi.Router) {
-				r.Use(homeCtx)
+				r.Use(m.homeCtx)
 				r.Get("/", h.GetHome)
 				r.Put("/", h.UpdateHome)
 				r.Delete("/", h.DeleteHome)
@@ -31,8 +32,8 @@ func rootRouter(h *handler.APIHandler) *chi.Mux {
 	return r
 }
 
-func New(cfg *config.Config, h *handler.APIHandler) *http.Server {
-	router := rootRouter(h)
+func New(cfg *config.Config, h *handler.APIHandler, m *Middleware) *http.Server {
+	router := rootRouter(h, m)
 	return &http.Server{
 		Addr:    cfg.ListenAddr,
 		Handler: router,

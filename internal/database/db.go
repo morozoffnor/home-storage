@@ -15,6 +15,18 @@ type Database struct {
 	conn *pgxpool.Pool
 	cfg  *config.Config
 	ctx  context.Context
+	User *User
+	Home *Home
+}
+
+type User struct {
+	conn *pgxpool.Pool
+	ctx  context.Context
+}
+
+type Home struct {
+	conn *pgxpool.Pool
+	ctx  context.Context
 }
 
 //go:embed migrations/*.sql
@@ -47,11 +59,22 @@ func New(cfg *config.Config, ctx context.Context) (*Database, error) {
 	config := conn.Config()
 	config.MaxConns = 20
 	config.MinConns = 2
+	user := &User{
+		conn: conn,
+		ctx:  ctx,
+	}
+
+	home := &Home{
+		conn: conn,
+		ctx:  ctx,
+	}
 
 	db := &Database{
 		conn: conn,
 		cfg:  cfg,
 		ctx:  ctx,
+		User: user,
+		Home: home,
 	}
 
 	// Run migrations
