@@ -19,5 +19,12 @@ func New(cfg *config.Config, db *database.Database, a *auth.Auth) *APIHandler {
 		cfg:  cfg,
 		db:   db,
 		auth: a,
+		User: User{
+			auth: a,
+			db:   db,
+		},
+		Home: Home{
+			db: db,
+		},
 	}
 }

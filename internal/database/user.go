@@ -41,6 +41,7 @@ func (u *User) Exists(email string) (bool, error) {
 
 func (u *User) Get(email string) (*types.User, error) {
 	var user types.User
+	var homeIDs []int
 
 	query := `SELECT * FROM users WHERE email=$1`
 	err := u.conn.QueryRow(u.ctx, query, email).
@@ -50,15 +51,26 @@ func (u *User) Get(email string) (*types.User, error) {
 			&user.Email,
 			&user.PassHash,
 			&user.CreatedAt,
-			&user.UpdatedAt)
+			&user.UpdatedAt,
+			&homeIDs,
+		)
+
 	if err != nil {
+		fmt.Printf("user.get error: %v\n", err)
 		return nil, err
 	}
+	homes, err := u.GetHomes(user.ID)
+	if err != nil {
+		fmt.Printf("user.get (homes) error: %v\n", err)
+		return nil, err
+	}
+	user.Homes = homes
 	return &user, nil
 }
 
 func (u *User) GetByID(id int) (*types.User, error) {
 	var user types.User
+	var homeIDs []int
 
 	query := `SELECT * FROM users WHERE id=$1`
 	err := u.conn.QueryRow(u.ctx, query, id).
@@ -68,10 +80,17 @@ func (u *User) GetByID(id int) (*types.User, error) {
 			&user.Email,
 			&user.PassHash,
 			&user.CreatedAt,
-			&user.UpdatedAt)
+			&user.UpdatedAt,
+			&homeIDs)
 	if err != nil {
 		return nil, err
 	}
+	homes, err := u.GetHomes(user.ID)
+	if err != nil {
+		fmt.Printf("user.getbyid (homes) error: %v\n", err)
+		return nil, err
+	}
+	user.Homes = homes
 	return &user, nil
 }
 
@@ -87,16 +106,24 @@ func (u *User) GetAll() ([]*types.User, error) {
 
 	for rows.Next() {
 		var user types.User
+		var homeIDs []int
 		err = rows.Scan(
 			&user.ID,
 			&user.Username,
 			&user.Email,
 			&user.PassHash,
 			&user.CreatedAt,
-			&user.UpdatedAt)
+			&user.UpdatedAt,
+			&homeIDs)
 		if err != nil {
 			return nil, err
 		}
+		homes, err := u.GetHomes(user.ID)
+		if err != nil {
+			fmt.Printf("user.getall (homes) error: %v\n", err)
+			return nil, err
+		}
+		user.Homes = homes
 		users = append(users, &user)
 	}
 	err = rows.Err()
@@ -160,6 +187,7 @@ func (u *User) GetHomes(userID int) ([]*types.Home, error) {
 		var home types.Home
 		err = rows.Scan(
 			&home.ID,
+			&home.Name,
 			&home.Description,
 			&home.CreatedAt,
 			&home.UpdatedAt)

@@ -13,6 +13,7 @@ func rootRouter(h *handler.APIHandler, m *Middleware) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
+	// auth endpoints do not need auth middleware
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", h.User.Register)
 		r.Post("/login", h.User.Login)
@@ -23,15 +24,24 @@ func rootRouter(h *handler.APIHandler, m *Middleware) *chi.Mux {
 		r.Route("/user", func(r chi.Router) {
 			r.Get("/", h.User.GetAll)
 
+			// user
 			r.Route("/{user_id}", func(r chi.Router) {
 				r.Use(m.userCtx)
 				r.Get("/", h.User.Get)
+
+				// user's homes
+				r.Route("/home", func(r chi.Router) {
+					r.Get("/", h.User.GetHomes)
+					r.Post("/", h.User.AddHome)
+				})
 			})
 		})
+		// home management
 		r.Route("/home", func(r chi.Router) {
 			r.Get("/", h.Home.GetAll)
 			r.Post("/", h.Home.Create)
 
+			// distinct home
 			r.Route("/{home_id}", func(r chi.Router) {
 				r.Use(m.homeCtx)
 				r.Get("/", h.Home.Get)

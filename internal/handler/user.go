@@ -28,7 +28,7 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 	}
 
-	var user regReq
+	user := regReq{}
 
 	err := json.Unmarshal(raw.Bytes(), &user)
 	if err != nil {
@@ -78,7 +78,6 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *User) Login(w http.ResponseWriter, r *http.Request) {
-	// получаем тело, распаковываем его, если надо
 	var raw bytes.Buffer
 	if _, err := raw.ReadFrom(r.Body); err != nil {
 		http.Error(w, "Invalid body", http.StatusUnprocessableEntity)
@@ -133,12 +132,13 @@ func (u *User) Get(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(int)
 	if !ok {
 		http.Error(w, http.StatusText(400), 400)
+		return
 	}
 
 	user, err := u.db.User.GetByID(userID)
 	if err != nil {
-		fmt.Printf("error updating home: %v\n", err)
-		http.Error(w, "Failed to update home", http.StatusInternalServerError)
+		fmt.Printf("error getting user: %v\n", err)
+		http.Error(w, "Failed to get user", http.StatusInternalServerError)
 		return
 	}
 
@@ -151,6 +151,7 @@ func (u *User) GetAll(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("error getting all users")
 		http.Error(w, http.StatusText(500), 500)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
@@ -197,6 +198,7 @@ func (u *User) GetHomes(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Error finding homes", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(homes)

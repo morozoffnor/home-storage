@@ -67,7 +67,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 		}
 
 		// update token if it expires soon
-		if claims.ExpiresAt.Add(time.Hour).After(time.Now()) {
+		if claims.ExpiresAt.Add(24 * 30 * time.Hour).After(time.Now()) {
 			token, _ := m.auth.Jwt.GenerateToken(claims.UserEmail)
 			ctx, _ := m.auth.Jwt.AddTokenToCookies(&w, r, token)
 			r = r.WithContext(ctx)
