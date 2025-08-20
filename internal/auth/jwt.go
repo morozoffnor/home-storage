@@ -88,6 +88,7 @@ func (j *JWT) AddTokenToCookies(w *http.ResponseWriter, r *http.Request, token s
 		Name:    "Authorization",
 		Value:   token,
 		Expires: time.Now().Add(24 * 30 * time.Hour),
+		Path:    "/",
 	})
 
 	claims, err := j.ParseToken(token)

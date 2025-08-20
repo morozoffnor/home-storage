@@ -72,7 +72,7 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
-
+	w.Header().Set("HX-Redirect", "/")
 	w.Header().Set("Content-Type", "text/plain, utf-8")
 	w.WriteHeader(http.StatusOK)
 }
@@ -124,6 +124,7 @@ func (u *User) Login(w http.ResponseWriter, r *http.Request) {
 
 	r = r.WithContext(ctx)
 
+	w.Header().Set("HX-Redirect", "/")
 	w.Header().Set("Content-Type", "text/plain, utf-8")
 	w.WriteHeader(http.StatusOK)
 }

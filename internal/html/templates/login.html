@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+    <script src="https://unpkg.com/htmx-ext-json-enc@2.0.1/json-enc.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #6e8efb;
+            box-shadow: 0 0 0 2px rgba(110, 142, 251, 0.2);
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to right, #6e8efb, #a777e3);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+            min-height: 20px;
+            font-size: 14px;
+        }
+        
+        .success {
+            color: #27ae60;
+            text-align: center;
+            margin-top: 15px;
+            min-height: 20px;
+            font-size: 14px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #777;
+            font-size: 14px;
+        }
+        
+        .footer a {
+            color: #6e8efb;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome Back</h1>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Username</label>
+                <input 
+                    type="text" 
+                    id="email" 
+                    name="email" 
+                    placeholder="Enter your email" 
+                    required
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Enter your password" 
+                    required
+                >
+            </div>
+            
+            <button hx-ext="json-enc"
+                type="submit"    
+                hx-post="/auth/login"
+                hx-trigger="click"
+                hx-target="#response"
+                hx-swap="innerHTML"
+                
+            >
+                Sign In
+            </button>
+            
+            <div id="response" class="error"></div>
+        </form>
+        
+        <div class="footer">
+            Don't have an account? <a href="#">Sign up</a><br>
+            <a href="#">Forgot your password?</a>
+        </div>
+    </div>
+
+    <script>
+        // hx-on:click="handleLogin(event)"
+        // Handle login with HTMX
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const responseDiv = document.getElementById('response');
+            
+            // Simple validation
+            if (!email || !password) {
+                responseDiv.className = 'error';
+                responseDiv.innerHTML = 'Please fill in all fields';
+                return;
+            }
+            
+            // Simulate a login request with HTMX
+            responseDiv.className = '';
+            responseDiv.innerHTML = 'Requesting your account info';
+
+            let data = {
+                email: email,
+                password: password
+            }
+            
+            // Making an auth request
+            fetch('/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (response.status === 200) {
+                        responseDiv.className = 'success';
+                        responseDiv.innerHTML = 'Login successful! Redirecting...';
+                        // Redirect to home page after successful login
+                        document.cookie = response.headers.get('set-cookie');
+                        console.log(response.headers.get('set-cookie'));
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1500);
+                    } else if (response.status === 401) {
+                        responseDiv.className = 'error';
+                        responseDiv.innerHTML = 'Invalid email or password';
+                    } else if (response.status === 422) {
+                        responseDiv.className = 'error';
+                        responseDiv.innerHTML = 'Please check your input';
+                    } else {
+                        responseDiv.className = 'error';
+                        responseDiv.innerHTML = 'Login failed. Please try again.';
+                    }
+                })
+                    .catch(error => console.error('Error:', error));
+        }
+        
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.style.backgroundColor = '#f8f9fa';
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.style.backgroundColor = 'white';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

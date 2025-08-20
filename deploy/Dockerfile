@@ -34,6 +34,9 @@ WORKDIR /root/
 # Copy the binary from builder stage
 COPY --from=builder /app/main .
 
+# Copy html templates
+COPY --from=builder /app/internal/html/templates ./templates
+
 # Copy migrations if they exist
 COPY --from=builder /app/internal/database/migrations ./migrations
 

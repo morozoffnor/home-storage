@@ -104,3 +104,33 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func (m *Middleware) FrontendAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		cookie, err := r.Cookie("Authorization")
+		if err != nil {
+			fmt.Println(err)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		claims, err := m.auth.Jwt.ParseToken(cookie.Value)
+		if err != nil {
+			fmt.Println(err)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		// update token if it expires soon
+		if claims.ExpiresAt.Add(24 * 30 * time.Hour).After(time.Now()) {
+			token, _ := m.auth.Jwt.GenerateToken(claims.UserEmail)
+			ctx, _ := m.auth.Jwt.AddTokenToCookies(&w, r, token)
+			r = r.WithContext(ctx)
+		}
+
+		ctx := context.WithValue(r.Context(), auth.ContextUserEmail, claims.UserEmail)
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
