@@ -191,6 +191,7 @@ func (u *User) AddHome(w http.ResponseWriter, r *http.Request) {
 func (u *User) GetHomes(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(int)
 	if !ok {
+		fmt.Println("could find user_id value")
 		http.Error(w, http.StatusText(400), 400)
 		return
 	}

@@ -18,6 +18,7 @@ type Database struct {
 	User      *User
 	Home      *Home
 	Container *Container
+	Item      *Item
 }
 
 type User struct {
@@ -31,6 +32,11 @@ type Home struct {
 }
 
 type Container struct {
+	conn *pgxpool.Pool
+	ctx  context.Context
+}
+
+type Item struct {
 	conn *pgxpool.Pool
 	ctx  context.Context
 }
@@ -80,6 +86,11 @@ func New(cfg *config.Config, ctx context.Context) (*Database, error) {
 		ctx:  ctx,
 	}
 
+	item := &Item{
+		conn: conn,
+		ctx:  ctx,
+	}
+
 	db := &Database{
 		conn:      conn,
 		cfg:       cfg,
@@ -87,6 +98,7 @@ func New(cfg *config.Config, ctx context.Context) (*Database, error) {
 		User:      user,
 		Home:      home,
 		Container: container,
+		Item:      item,
 	}
 
 	// Run migrations
