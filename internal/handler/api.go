@@ -7,11 +7,12 @@ import (
 )
 
 type APIHandler struct {
-	cfg  *config.Config
-	db   *database.Database
-	auth *auth.Auth
-	User User
-	Home Home
+	cfg       *config.Config
+	db        *database.Database
+	auth      *auth.Auth
+	User      User
+	Home      Home
+	Container Container
 }
 
 func New(cfg *config.Config, db *database.Database, a *auth.Auth) *APIHandler {
@@ -24,6 +25,9 @@ func New(cfg *config.Config, db *database.Database, a *auth.Auth) *APIHandler {
 			db:   db,
 		},
 		Home: Home{
+			db: db,
+		},
+		Container: Container{
 			db: db,
 		},
 	}

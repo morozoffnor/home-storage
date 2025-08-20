@@ -12,11 +12,12 @@ import (
 )
 
 type Database struct {
-	conn *pgxpool.Pool
-	cfg  *config.Config
-	ctx  context.Context
-	User *User
-	Home *Home
+	conn      *pgxpool.Pool
+	cfg       *config.Config
+	ctx       context.Context
+	User      *User
+	Home      *Home
+	Container *Container
 }
 
 type User struct {
@@ -25,6 +26,11 @@ type User struct {
 }
 
 type Home struct {
+	conn *pgxpool.Pool
+	ctx  context.Context
+}
+
+type Container struct {
 	conn *pgxpool.Pool
 	ctx  context.Context
 }
@@ -69,12 +75,18 @@ func New(cfg *config.Config, ctx context.Context) (*Database, error) {
 		ctx:  ctx,
 	}
 
-	db := &Database{
+	container := &Container{
 		conn: conn,
-		cfg:  cfg,
 		ctx:  ctx,
-		User: user,
-		Home: home,
+	}
+
+	db := &Database{
+		conn:      conn,
+		cfg:       cfg,
+		ctx:       ctx,
+		User:      user,
+		Home:      home,
+		Container: container,
 	}
 
 	// Run migrations

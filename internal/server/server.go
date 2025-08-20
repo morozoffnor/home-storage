@@ -47,6 +47,17 @@ func rootRouter(h *handler.APIHandler, m *Middleware) *chi.Mux {
 				r.Get("/", h.Home.Get)
 				r.Put("/", h.Home.Update)
 				r.Delete("/", h.Home.Delete)
+
+				r.Route("/container", func(r chi.Router) {
+					r.Get("/", h.Container.GetAllInHome)
+					r.Post("/", h.Container.Create)
+
+					r.Route("/{container_id}", func(r chi.Router) {
+						r.Use(m.containerCtx)
+						r.Get("/", h.Container.Get)
+					})
+
+				})
 			})
 		})
 	})

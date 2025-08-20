@@ -23,15 +23,23 @@ func NewMiddleware(a *auth.Auth, db *database.Database) *Middleware {
 	}
 }
 
+type contextKey string
+
+const (
+	homeIDparam      contextKey = "home_id"
+	userIDparam      contextKey = "user_id"
+	containerIDparam contextKey = "container_id"
+)
+
 func (m *Middleware) homeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		homeIDStr := chi.URLParam(r, "home_id")
-		var homeID int
+		var homeID string
 		if _, err := fmt.Sscanf(homeIDStr, "%d", &homeID); err != nil {
 			http.Error(w, "invalid home ID format", http.StatusBadRequest)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "home_id", homeID)
+		ctx := context.WithValue(r.Context(), homeIDparam, homeID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -44,7 +52,20 @@ func (m *Middleware) userCtx(next http.Handler) http.Handler {
 			http.Error(w, "invalid user id format", http.StatusBadRequest)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "user_id", userID)
+		ctx := context.WithValue(r.Context(), userIDparam, userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (m *Middleware) containerCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userIDStr := chi.URLParam(r, "container_id")
+		var containerID int
+		if _, err := fmt.Sscanf(userIDStr, "%d", &containerID); err != nil {
+			http.Error(w, "invalid user id format", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), containerIDparam, containerID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

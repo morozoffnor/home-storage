@@ -53,6 +53,7 @@ func (h *Home) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Home created successfully"})
 }
 
@@ -73,7 +74,6 @@ func (h *Home) Get(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		http.Error(w, http.StatusText(400), 400)
 	}
-	fmt.Println(homeID)
 
 	home, err := h.db.Home.Get(homeID)
 	if err != nil {
