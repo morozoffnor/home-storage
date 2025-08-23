@@ -25,6 +25,15 @@ func rootRouter(api *api.APIHandler, frontend *frontend.FrontendHandler, m *Midd
 	r.Group(func(r chi.Router) {
 		r.Use(m.FrontendAuth)
 		r.Get("/", frontend.HomePage)
+		r.Get("/homes", frontend.Home.GetAll)
+
+		r.Route("/home", func(r chi.Router) {
+
+			r.Route("/{home_id}", func(r chi.Router) {
+				r.Use(m.homeCtx)
+				r.Get("/", frontend.Container.GetAllInHome)
+			})
+		})
 	})
 
 	r.Route("/api", func(r chi.Router) {

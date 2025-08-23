@@ -1,0 +1,24 @@
+<div class="content" id="content">
+    {{ range .}}
+    <div class="item"
+        hx-get="/home/{{ .ID }}" 
+        hx-trigger="click" 
+        hx-swap="outerHTML" 
+        hx-target="#content"
+    >
+        <div class="item-header">
+            <div class="item-title">{{ .Name }}</div>
+            <div class="item-date">{{ .CreatedAt }}</div>
+        </div>
+        <div class="item-content">
+            {{ .Description }}
+        </div>
+        <div class="item-footer">
+            <div class="item-tags">
+                <span class="location">Containers {{ .ContainersCount }}</span>
+                <span class="items">Items {{ .ItemsCount }}</span>
+            </div>
+        </div>
+    </div>
+    {{ end }}
+</div>

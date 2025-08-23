@@ -10,26 +10,47 @@ import (
 )
 
 type FrontendHandler struct {
-	db   *database.Database
-	auth *auth.Auth
+	db        *database.Database
+	auth      *auth.Auth
+	Home      *Home
+	Container *Container
+	Item      *Item
+}
+
+type Home struct {
+	db *database.Database
+}
+
+type Container struct {
+	db *database.Database
+}
+
+type Item struct {
+	db *database.Database
 }
 
 func New(db *database.Database) *FrontendHandler {
 	return &FrontendHandler{
 		db: db,
+		Home: &Home{
+			db: db,
+		},
+		Container: &Container{
+			db: db,
+		},
+		Item: &Item{
+			db: db,
+		},
 	}
 }
 
 func (f *FrontendHandler) HomePage(w http.ResponseWriter, r *http.Request) {
-	// if !f.auth.Jwt.CheckToken(r) {
-
-	// }
 	tmpl, err := template.ParseFiles("templates/index.html")
 	if err != nil {
 		fmt.Printf("error while parsing html file: %v\n", err)
 		http.Error(w, "error while parsing html file", http.StatusInternalServerError)
 	}
-	err = tmpl.Execute(w, struct{ Text string }{"text"})
+	err = tmpl.Execute(w, "")
 	if err != nil {
 		fmt.Printf("error while exucuting html template: %v\n", err)
 		http.Error(w, "error filing the template", http.StatusInternalServerError)

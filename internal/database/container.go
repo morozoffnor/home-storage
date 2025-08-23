@@ -153,3 +153,13 @@ func (c *Container) Delete(id int) error {
 	}
 	return nil
 }
+
+func (c *Container) ItemsCount(containerID int) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM items WHERE container_id = $1`
+	err := c.conn.QueryRow(c.ctx, query, containerID).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}

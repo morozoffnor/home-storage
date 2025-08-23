@@ -135,7 +135,6 @@
                     required
                 >
             </div>
-            
             <div class="form-group">
                 <label for="password">Password</label>
                 <input 
@@ -146,14 +145,12 @@
                     required
                 >
             </div>
-            
             <button hx-ext="json-enc"
                 type="submit"    
                 hx-post="/auth/login"
                 hx-trigger="click"
                 hx-target="#response"
                 hx-swap="innerHTML"
-                
             >
                 Sign In
             </button>
@@ -166,79 +163,5 @@
             <a href="#">Forgot your password?</a>
         </div>
     </div>
-
-    <script>
-        // hx-on:click="handleLogin(event)"
-        // Handle login with HTMX
-        function handleLogin(event) {
-            event.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const responseDiv = document.getElementById('response');
-            
-            // Simple validation
-            if (!email || !password) {
-                responseDiv.className = 'error';
-                responseDiv.innerHTML = 'Please fill in all fields';
-                return;
-            }
-            
-            // Simulate a login request with HTMX
-            responseDiv.className = '';
-            responseDiv.innerHTML = 'Requesting your account info';
-
-            let data = {
-                email: email,
-                password: password
-            }
-            
-            // Making an auth request
-            fetch('/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify(data)
-                })
-                .then(response => {
-                    if (response.status === 200) {
-                        responseDiv.className = 'success';
-                        responseDiv.innerHTML = 'Login successful! Redirecting...';
-                        // Redirect to home page after successful login
-                        document.cookie = response.headers.get('set-cookie');
-                        console.log(response.headers.get('set-cookie'));
-                        setTimeout(() => {
-                            window.location.href = '/';
-                        }, 1500);
-                    } else if (response.status === 401) {
-                        responseDiv.className = 'error';
-                        responseDiv.innerHTML = 'Invalid email or password';
-                    } else if (response.status === 422) {
-                        responseDiv.className = 'error';
-                        responseDiv.innerHTML = 'Please check your input';
-                    } else {
-                        responseDiv.className = 'error';
-                        responseDiv.innerHTML = 'Login failed. Please try again.';
-                    }
-                })
-                    .catch(error => console.error('Error:', error));
-        }
-        
-        // Add some interactivity
-        document.addEventListener('DOMContentLoaded', function() {
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.addEventListener('focus', function() {
-                    this.style.backgroundColor = '#f8f9fa';
-                });
-                
-                input.addEventListener('blur', function() {
-                    this.style.backgroundColor = 'white';
-                });
-            });
-        });
-    </script>
 </body>
 </html>

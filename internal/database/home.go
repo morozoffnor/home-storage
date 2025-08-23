@@ -116,3 +116,24 @@ func (h *Home) Delete(id int) error {
 	}
 	return nil
 }
+
+func (h *Home) ContainersCount(id int) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM containers WHERE home_id = $1`
+	err := h.conn.QueryRow(h.ctx, query, id).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (h *Home) ItemsCount(id int) (int, error) {
+	// count items in all containers in home
+	var count int
+	query := `SELECT COUNT(*) FROM items WHERE container_id IN (SELECT id FROM containers WHERE home_id = $1)`
+	err := h.conn.QueryRow(h.ctx, query, id).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
